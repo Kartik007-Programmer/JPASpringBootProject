@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #059669;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: rgb(115 39 245);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 1.25rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box; /* Crucial for padding */
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        #message {
+            margin-top: 1.25rem;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .success { color: var(--success-color); }
+        .error { color: #dc2626; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Add New Product</h2>
+
+    <form id="productForm">
+        <label for="name">Product Name</label>
+        <input type="text" id="name" placeholder="e.g. Wireless Mouse" required>
+
+        <label for="price">Price ($)</label>
+        <input type="number" id="price" placeholder="0.00" step="0.01" required>
+
+        <label for="description">Description</label>
+        <textarea id="description" placeholder="Briefly describe the product..."></textarea>
+
+        <label for="quantity">Quantity</label>
+        <input type="number" id="quantity" placeholder="0">
+
+        <label for="imageFile">ImageFile</label>
+        <input type="file" id="imageFile" placeholder="Upload Image...">
+
+        <button type="submit">Create Product</button>
+    </form>
+
+    <p id="message"></p>
+</div>
+
+<script>
+    document.getElementById("productForm").addEventListener("submit", function(e){
+        e.preventDefault();
+
+        const formData = new FormData();
+
+        const product = {
+            name: document.getElementById("name").value,
+            price: document.getElementById("price").value,
+            description: document.getElementById("description").value,
+            quantity: document.getElementById("quantity").value
+        };
+
+        formData.append("product",
+         new Blob([JSON.stringify(product)], { type: "application/json" }
+         ));
+        formData.append("imagefile",
+         document.getElementById("imageFile").files[0]
+        );
+
+        fetch("http://localhost:8080/products", {
+            method: "POST",
+            body: formData
+        })
+        .then(res => res.json())
+        .then(() => {
+            alert("Product added successfully!");
+        })
+        .catch(() => {
+            alert("Error saving product");
+        });
+    });
+</script>
+
+</body>
+</html>
