@@ -2,7 +2,6 @@ package com.group.jpaspringbootproject.Repository;
 
 import com.group.jpaspringbootproject.Models.Product;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 
