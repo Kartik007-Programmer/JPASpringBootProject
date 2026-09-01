@@ -2,6 +2,7 @@ package com.group.jpaspringbootproject.Controllers;
 
 import com.group.jpaspringbootproject.Models.Users;
 import com.group.jpaspringbootproject.Services.SecurityService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +26,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @RequestParam("username") String username,
-            @RequestParam("password")  String password){
+            @RequestParam("password")  String password,
+            HttpServletResponse response){
 
-        return securityService.VerifyUserByUsernamePassword(username,password);
+        return securityService.VerifyUserByUsernamePassword(username,password,response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        return securityService.Logout(response);
     }
 }

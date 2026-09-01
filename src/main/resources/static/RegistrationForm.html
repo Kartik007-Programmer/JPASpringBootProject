@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | App Authentication</title>
+    <title>Register | App Authentication</title>
     <style>
         * {
             box-sizing: border-box;
@@ -42,7 +42,7 @@
             font-size: 14px;
             font-weight: 600;
         }
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid #cccccc;
@@ -51,7 +51,7 @@
             outline: none;
             transition: border-color 0.2s;
         }
-        .form-group input:focus {
+        .form-group input:focus, .form-group select:focus {
             border-color: #007bff;
         }
         .btn {
@@ -96,57 +96,64 @@
 <body>
 
 <div class="card">
-    <h2>Sign In</h2>
+    <h2>Create Account</h2>
     <div id="alert" class="alert"></div>
-    <form id="loginForm">
+    <form id="registerForm">
         <div class="form-group">
-            <label for="username">Email Address</label>
-            <input type="email" id="username" required placeholder="user@example.com">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" required placeholder="John Doe">
+        </div>
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" required placeholder="user@example.com">
         </div>
         <div class="form-group">
             <label for="password">Password</label>
             <input type="password" id="password" required placeholder="••••••••">
         </div>
-        <button type="submit" class="btn">Login</button>
+        <div class="form-group">
+            <label for="role">Role</label>
+            <select id="role" required>
+                <option value="USER">USER</option>
+                <option value="ADMIN">ADMIN</option>
+            </select>
+        </div>
+        <button type="submit" class="btn">Register</button>
     </form>
     <div class="footer-text">
-        Don't have an account? <a href="RegistrationForm.html">Register</a>
+        Already have an account? <a href="login.html">Sign In</a>
     </div>
 </div>
 
 <script>
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const alertBox = document.getElementById('alert');
         alertBox.style.display = 'none';
 
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-
-        // Uses URLSearchParams because controller expects @RequestParam
-        const params = new URLSearchParams();
-        params.append('username', username);
-        params.append('password', password);
+        const payload = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            role: document.getElementById('role').value
+        };
 
         try {
-            const response = await fetch('/auth/v1/login', {
+            const response = await fetch('/auth/v1/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
-                const message = await response.text();
                 alertBox.className = 'alert alert-success';
-                alertBox.textContent = message || 'Login successful!';
+                alertBox.textContent = 'Registration successful! Redirecting to login...';
                 alertBox.style.display = 'block';
-                    setTimeout(function() {
-                        window.location.href = "/";
-                    }, 2000);
+                setTimeout(() => window.location.href = 'login.html', 1500);
             } else {
                 alertBox.className = 'alert alert-error';
-                alertBox.textContent = 'Invalid email or password.';
+                alertBox.textContent = 'Registration failed. Please check your data.';
                 alertBox.style.display = 'block';
             }
         } catch (error) {

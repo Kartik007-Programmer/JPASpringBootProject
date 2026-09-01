@@ -2,10 +2,9 @@ package com.group.jpaspringbootproject.Services;
 
 import com.group.jpaspringbootproject.Models.Users;
 import com.group.jpaspringbootproject.Repository.UsersRepo;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -32,13 +31,34 @@ public class SecurityService {
         return ResponseEntity.status(HttpStatus.CREATED).body(usersRepo.save(users));
     }
 
-    public ResponseEntity<?> VerifyUserByUsernamePassword(String username, String password) {
+    public ResponseEntity<?> VerifyUserByUsernamePassword(String username, String password, HttpServletResponse response) {
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(username, password));
         if (authentication.isAuthenticated()) {
-            return ResponseEntity.ok().body(jwtService.generateToken(username));
-            //            return ResponseEntity.ok().build();
+            String token = jwtService.generateToken(username);
+            ResponseCookie responseCookie = ResponseCookie.from("JWT_TOKEN",token)
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(60 * 60)
+                    .sameSite("Lax")
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
+                return ResponseEntity.ok().build();
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    public ResponseEntity<?> Logout(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from("JWT_TOKEN", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        return ResponseEntity.ok("Logged out successfully");
     }
 }
