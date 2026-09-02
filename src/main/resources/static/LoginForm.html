@@ -110,7 +110,7 @@
         <button type="submit" class="btn">Login</button>
     </form>
     <div class="footer-text">
-        Don't have an account? <a href="RegistrationForm.html">Register</a>
+        Don't have an account? <a href="/RegistrationForm.html">Register</a>
     </div>
 </div>
 
@@ -153,6 +153,12 @@
             alertBox.className = 'alert alert-error';
             alertBox.textContent = 'Unable to connect to the server.';
             alertBox.style.display = 'block';
+        }
+    });
+
+    window.addEventListener("pageshow", function (event) {
+        if(event.persisted){
+            window.location.reload();
         }
     });
 </script>

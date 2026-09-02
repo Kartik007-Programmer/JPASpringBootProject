@@ -66,7 +66,7 @@
             const card = document.createElement("div");
             card.className = "card";
             card.onclick = (e) => {
-                if(!e.target.closest('button')) window.location.href=`OneProduct.html?id=${p.id}`;
+                if(!e.target.closest('button')) window.location.href=`AdminOneProduct.html?id=${p.id}`;
             };
 
             const imgSrc = p.imageName ? `http://localhost:8080/products/${p.id}/image` : 'https://via.placeholder.com/300x200?text=No+Image';

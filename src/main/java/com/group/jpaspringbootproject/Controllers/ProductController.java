@@ -2,6 +2,7 @@ package com.group.jpaspringbootproject.Controllers;
 
 import com.group.jpaspringbootproject.Models.Product;
 import com.group.jpaspringbootproject.Services.ProductService;
+import com.group.jpaspringbootproject.Services.SecurityService;
 import jakarta.websocket.server.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -20,10 +21,19 @@ public class ProductController
     @Autowired
     ProductService productService;
 
+    @Autowired
+    SecurityService securityService;
+
     @RequestMapping("/")
     public ModelAndView Home() {
+        String role = securityService.getPresentAuthorizedRole();
         ModelAndView mv = new ModelAndView();
-        mv.setViewName("HomePage.html");
+
+        if (role.equals("ADMIN")) {
+            mv.setViewName("AdminDashboad.html");
+        }else if (role.equals("USER")) {
+            mv.setViewName("HomePage.html");
+        }
         return mv;
     }
 

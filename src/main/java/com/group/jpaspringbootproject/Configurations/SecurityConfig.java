@@ -27,7 +27,14 @@ public class SecurityConfig {
         http
                 .csrf(obj->obj.disable())
                 .authorizeHttpRequests(authorizeRequests ->
-                        authorizeRequests.requestMatchers("/auth/**","/LoginForm.html","/RegistrationForm.html").permitAll()
+                        authorizeRequests
+                                .requestMatchers("/auth/**","/LoginForm.html","/RegistrationForm.html").permitAll()
+                                .requestMatchers("/HomePage.html","/OneProduct.html")
+                                .hasAuthority("USER")
+                                .requestMatchers("/UpdateProduct.html","/AdminDashboad.html")
+                                .hasAuthority("ADMIN")
+                                .requestMatchers("/AdminOneProduct.html","/ViewAllProduct.html","/AddProduct.html")
+                                .hasAuthority("ADMIN")
                                 .anyRequest().authenticated())
                 .exceptionHandling(exception->
                         exception.authenticationEntryPoint((request, response, authException) -> {

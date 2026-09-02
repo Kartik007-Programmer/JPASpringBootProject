@@ -25,7 +25,7 @@
         <p id="pDesc" style="color:#666; line-height:1.6;"></p>
         <div class="price" id="pPrice">₹0</div>
         <p><b>Stock:</b> <span id="pQty">0</span> units</p>
-        <button onclick="BuyProduct()" style="background:#f59e0b; color:white; border:none; padding:15px 30px; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:20px;">Buy Product</button>
+        <button onclick="goToEdit()" style="background:#f59e0b; color:white; border:none; padding:15px 30px; border-radius:10px; cursor:pointer; font-weight:bold; margin-top:20px;">Edit This Product</button>
     </div>
 </div>
 
@@ -45,7 +45,9 @@
         }
     });
 
-
+    function goToEdit() {
+        window.location.href = `UpdateProduct.html?id=${id}`;
+    }
 
      window.addEventListener("pageshow", function (event) {
         if(event.persisted){

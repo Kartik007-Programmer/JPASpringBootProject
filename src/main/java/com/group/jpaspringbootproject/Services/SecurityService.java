@@ -1,5 +1,6 @@
 package com.group.jpaspringbootproject.Services;
 
+import com.group.jpaspringbootproject.Models.Role;
 import com.group.jpaspringbootproject.Models.Users;
 import com.group.jpaspringbootproject.Repository.UsersRepo;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,6 +10,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,8 +28,20 @@ public class SecurityService {
     @Autowired
     AuthenticationManager authenticationManager;
 
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @Autowired
+    UserDetailsService userDetailsService;
+
     public ResponseEntity<?> RegisterUser(Users users) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+        // Set default role if not provided
+        if (users.getRole() == null) {
+            users.setRole(Role.USER);
+        }
+
+        passwordEncoder = new BCryptPasswordEncoder();
         users.setPassword(passwordEncoder.encode(users.getPassword()));
         return ResponseEntity.status(HttpStatus.CREATED).body(usersRepo.save(users));
     }
@@ -35,7 +50,9 @@ public class SecurityService {
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(username, password));
         if (authentication.isAuthenticated()) {
-            String token = jwtService.generateToken(username);
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            String token = jwtService.generateToken(userDetails);
+            System.out.println("Token: "+token);
             ResponseCookie responseCookie = ResponseCookie.from("JWT_TOKEN",token)
                     .httpOnly(true)
                     .secure(false)
@@ -60,5 +77,13 @@ public class SecurityService {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return ResponseEntity.ok("Logged out successfully");
+    }
+
+    public String getPresentAuthorizedRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getAuthorities().stream()
+                .findFirst()
+                .map(auth -> auth.getAuthority())
+                .orElse("USER");
     }
 }
