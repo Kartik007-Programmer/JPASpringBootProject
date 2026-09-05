@@ -3,6 +3,8 @@ package com.group.jpaspringbootproject.Services;
 import com.group.jpaspringbootproject.Models.Product;
 import com.group.jpaspringbootproject.Repository.ProductRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,14 +21,17 @@ public class ProductService {
     @Autowired
     ProductRepo repo;
 
+    @Cacheable(value = "products", key = "'all'")
     public List<Product> getProducts() {
         return repo.findAll() ;
     }
 
+    @Cacheable(value = "products",key = "#prodId")
     public Product getProductById(int prodId) {
         return repo.findById(prodId).get();
     }
 
+    @CacheEvict(value = "products", allEntries = true)
     public Product AddProduct(Product prod, MultipartFile imagefile) throws IOException {
         prod.setImageName(imagefile.getOriginalFilename());
         prod.setImageType(imagefile.getContentType());
@@ -39,6 +44,7 @@ public class ProductService {
         return  repo.save(prod);
     }
 
+    @CacheEvict(value = "products", allEntries = true)
     public Product  UpdateProduct(Product prod, MultipartFile imagefile) throws IOException {
         if (imagefile != null && !imagefile.isEmpty()) {
             prod.setImageName(imagefile.getOriginalFilename());
@@ -55,6 +61,7 @@ public class ProductService {
         return repo.save(prod);
     }
 
+    @CacheEvict(value = "products", allEntries = true)
     public void deleteProductById(int prodId) {
         repo.deleteById(prodId);
     }

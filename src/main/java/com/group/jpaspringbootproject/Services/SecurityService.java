@@ -34,16 +34,24 @@ public class SecurityService {
     @Autowired
     UserDetailsService userDetailsService;
 
+    @Autowired
+    RedisCacheService redisCacheService;
+
+
     public ResponseEntity<?> RegisterUser(Users users) {
 
         // Set default role if not provided
         if (users.getRole() == null) {
             users.setRole(Role.USER);
         }
-
         passwordEncoder = new BCryptPasswordEncoder();
         users.setPassword(passwordEncoder.encode(users.getPassword()));
-        return ResponseEntity.status(HttpStatus.CREATED).body(usersRepo.save(users));
+        Users savedUser = usersRepo.save(users);
+
+        // Cache the new user
+        redisCacheService.setCacheUser(savedUser.getEmail(), savedUser);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
     }
 
     public ResponseEntity<?> VerifyUserByUsernamePassword(String username, String password, HttpServletResponse response) {
@@ -52,7 +60,11 @@ public class SecurityService {
         if (authentication.isAuthenticated()) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
             String token = jwtService.generateToken(userDetails);
-            System.out.println("Token: "+token);
+
+            // Cache the user and token in Redis
+            redisCacheService.setCacheUser(username, (Users) userDetails);
+            redisCacheService.setCacheToken(token,username);
+
             ResponseCookie responseCookie = ResponseCookie.from("JWT_TOKEN",token)
                     .httpOnly(true)
                     .secure(false)
@@ -61,12 +73,20 @@ public class SecurityService {
                     .sameSite("Lax")
                     .build();
             response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
-                return ResponseEntity.ok().build();
+            return ResponseEntity.ok().build();
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     public ResponseEntity<?> Logout(HttpServletResponse response) {
+        // Get current authentication
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) auth.getPrincipal();
+            // Invalidate cache
+            redisCacheService.invalidateUserCache(userDetails.getUsername());
+        }
+
         ResponseCookie cookie = ResponseCookie.from("JWT_TOKEN", "")
                 .httpOnly(true)
                 .secure(false)

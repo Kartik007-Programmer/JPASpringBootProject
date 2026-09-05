@@ -1,6 +1,8 @@
 package com.group.jpaspringbootproject.Configurations;
 
+import com.group.jpaspringbootproject.Models.Users;
 import com.group.jpaspringbootproject.Services.JwtService;
+import com.group.jpaspringbootproject.Services.RedisCacheService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -26,62 +28,61 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsService userDetailsService;
 
+    @Autowired
+    private RedisCacheService redisCacheService;
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        String authToken = null;
-        String username = null;
-
-        String uri = request.getRequestURI();
-        if (uri.equals("/LoginForm.html") ||
-                uri.equals("RegistrationForm.html") ||
-                uri.startsWith("/auth/")){
-
+        if (IsURIsPublicEndPoints(request.getRequestURI())){
             filterChain.doFilter(request, response);
             return;
         }
 
-        if (request.getCookies() != null){
-            for (Cookie cookie : request.getCookies()) {
-                if ("JWT_TOKEN".equals(cookie.getName())) {
-                    authToken = cookie.getValue();
-                    break;
-                }
-            }
-        }
+        String authToken = getAuthTokenFromRequest(request);
 
-        if (authToken == null) {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                authToken = authHeader.substring(7);
-            }
-        }
-
-        if (authToken != null) {
+        if (authToken != null && SecurityContextHolder.getContext().getAuthentication() == null){
             try {
-                username = jwtService.getUsernameByToken(authToken);
+                String CachedUsername = redisCacheService.getUserNameFromTokenCache(authToken);
+                String username = null;
+                if (CachedUsername != null) {
+                    username = CachedUsername;
+                }else {
+                    username = jwtService.getUsernameByToken(authToken);
+                }
+
+                if (username != null) {
+
+                    Users user = null;
+
+                    Users Cachedusers = redisCacheService.getUserFromCache(username);
+
+                    if (Cachedusers != null) {
+                        user = Cachedusers;
+                    }else {
+                        UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                        if (userDetails instanceof Users) {
+                            user = (Users) userDetails;
+                            redisCacheService.setCacheUser(username, user);
+                        }
+                    }
+
+
+                    assert user != null;
+                    if (jwtService.isTokenValid(authToken,user)){
+
+                        if (CachedUsername == null) {
+                            redisCacheService.setCacheToken(authToken,username);
+                        }
+                        setAuthenticationByUserDetails(user,request);
+                    }
+                }
             } catch (Exception e) {
-                authToken = null;
-            }        }
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null){
-            try {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-
-                if (jwtService.isTokenValid(authToken,userDetails)){
-                    UsernamePasswordAuthenticationToken usernamePasswordAuthToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities());
-
-                    usernamePasswordAuthToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthToken);
-                }
-            } catch (Exception e) {}
+                logger.error("Authentication failed: " + e.getMessage());
+            }
         }
 
         // If not authenticated, redirect to login
@@ -92,4 +93,38 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
+
+    private String getAuthTokenFromRequest(HttpServletRequest request) {
+        if (request.getCookies() != null){
+            for (Cookie cookie : request.getCookies()) {
+                if ("JWT_TOKEN".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        return null;
+    }
+
+    private boolean IsURIsPublicEndPoints(String uri) {
+        return uri.equals("/LoginForm.html") ||
+                uri.equals("RegistrationForm.html") ||
+                uri.startsWith("/auth/");
+    }
+
+    private void setAuthenticationByUserDetails(UserDetails userDetails, HttpServletRequest request) {
+        UsernamePasswordAuthenticationToken usernamePasswordAuthToken = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities());
+
+        usernamePasswordAuthToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+        SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthToken);
+    }
+
 }
